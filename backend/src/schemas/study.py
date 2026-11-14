@@ -10,3 +10,5 @@ class StudyOutput(BaseModel):
     feature_count:int
     supported:bool
     reason:str
+    multi_supported:bool
+    multi_reason:str

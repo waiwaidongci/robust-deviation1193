@@ -1,8 +1,8 @@
 # 霜棱库房多量偏离研究簿
 
-固定训练、校准与测试窗口，用MCD稳健中心/协方差描述四量共变，再以独立校准上尾p给人工补测提供线索。
+固定训练、校准与测试窗口，用稳健中心/协方差描述四量共变，再以独立校准上尾p给人工补测提供线索；研究可按数据选择**单峰**或**多主群**模式。
 
-霜棱档案材料研究所有16位分析员，核对库房固定窗口的温度、相对湿度、颗粒浓度和温度波动。上游 `sl-archive-climate-202611.csv` 是窗口汇总；过去逐列画阈值、遇到极端值后手改中心，再用测试分位解释“正常范围”。三个痛点是忽略共变、训练极端值影响估计、把测试数据参与选择后的结果当成保证。本系统替代联合量研究与归档环节，下游由材料负责人批准独立补测，阅读者下载已批准测试窗口CSV。当前全部为独立合成窗口，不连接真实传感器、不做危险诊断或实时告警。
+霜棱档案材料研究所有16位分析员，核对库房固定窗口的温度、相对湿度、颗粒浓度和温度波动。上游 `sl-archive-climate-202611.csv` 是窗口汇总；过去逐列画阈值、遇到极端值后手改中心，再用测试分位解释“正常范围”。三个痛点是忽略共变、训练极端值影响估计、把测试数据参与选择后的结果当成保证。本系统替代联合量研究与归档环节，下游由材料负责人批准独立补测，阅读者下载已批准测试窗口CSV。当前全部为独立合成窗口，不连接真实传感器、不做危险诊断或实时告警。多主群模式只为每个已识别主群建立各自的稳健参照，不把群数或归属当作危险事实。
 
 ## 启动
 
@@ -25,22 +25,22 @@ JWT角色真实在后端执行，阅读者写操作403、研究员审批403、�
 
 ## 一天的研究剧本
 
-1. 09:00 温砚以研究员登录，打开 `SL-01`“主群 · 独立窗口观察”，核对固定四量与train200/cal150/test100。
+1. 09:00 温砚以研究员登录，打开 `SL-01`“主群 · 独立窗口观察”，核对固定四量与train200/cal150/test100；`SL-04`“双主群 · 冻结归属观察”用于多主群路径。
 2. 09:05 查看温度°C、湿度%RH、颗粒μg/m³、温度波动°C的FeatureSpec次序。四量预定义，不开放按测试结果挑选。
 3. 09:10 读取 `SL-02` 训练前20条极端值的稳健对照；另查 `SL-03` 线性退化边界，训练秩亏拒绝运行。
 4. 09:15 新建“主群四量固定拆分”，预设alpha=.05、seed2026，support_fraction=.8固定。运行创建时冻结来源、角色、四量、alpha。
-5. 09:16 worker真实读取队列，只用train定标并拟合FastMCD，保存raw与重加权支持/中心/协方差，之后固定模型给cal/test评分。
+5. 09:16 worker真实读取队列，只用train定标并拟合；单峰模式一次FastMCD，多主群模式先BIC选群再逐群FastMCD，保存各群raw与重加权支持/中心/协方差和冻结归属规则，之后给cal/test评分。
 6. 09:20 主群真实HTTP运行的raw支持160、重加权支持191；150条cal构成参照，100条test中2条p≤.05。它们来自真实计算，前端没有这些常数。
-7. 09:25 查看所选test的D²、cal≥test计数与上尾p，记录独立窗口补测，不把训练支持当新窗口标签。
+7. 09:25 查看所选test的D²、cal≥test计数与上尾p；多主群还显示归属群、次近群与间隔、同群cal。记录独立窗口补测，不把训练支持或群归属当新窗口标签。
 8. 10:00 沈棠批准研究归档，秦禾以阅读者下载 `deviation-run-N.csv`。批准的是独立核验计划，不确认危险、条件保证或批量FDR。
 
 ## 六页与五实体
 
 联合量总览、来源与严格拆分、稳健拟合配置、偏离与校准证据、人工补测审阅、过程留痕。`ArchiveStudy / ClimateWindow / FeatureSpec / DeviationRun / ReviewNote` 均贯穿表、model、schema、service、route、前端API、store及页面/组件；另有User/Audit。来源数值/角色/特征只读核对，窗口批注可写，历史运行使用冻结快照。
 
-seed三研究各450条，共1350窗口、12个特征定义。每研究固定train200/cal150/test100，窗口编号是稳定身份而非连续时间序列。SL-01四量联合Gaussian主群；SL-02只在train前20条加入极端值，cal/test仍来自同一独立主群；SL-03第四量为前两量线性组合，训练秩亏。种子260/261/262、固定生成R与尺度写在seed脚本，不是实测数据。自然键为email、study code、(study,window code)、(study,feature code/position)、基线运行name；重复seed只补缺失，不覆盖用户批注或已批准建议。`SEED_DEMO=true`启动自动执行，失败只记日志，独立seed命令仍可运行。
+seed四研究各450条，共1800窗口、16个特征定义：SL-01单峰主群、SL-02训练污染、SL-03训练秩亏、SL-04双主群（train选2群，cal/test各含两群）。每研究固定train200/cal150/test100，窗口编号是稳定身份而非连续时间序列。SL-01四量联合Gaussian主群；SL-02只在train前20条加入极端值，cal/test仍来自同一独立主群；SL-03第四量为前两量线性组合，训练秩亏；SL-04主群300窗口叠加独立偏移的第二主群150窗口后固定乱序，确保选群不能依赖行序。种子260/261/262/263、固定生成R与尺度写在seed脚本，不是实测数据。自然键为email、study code、(study,window code)、(study,feature code/position)、基线运行name；重复seed只补缺失，不覆盖用户批注或已批准建议。`SEED_DEMO=true`启动自动执行，失败只记日志，独立seed命令仍可运行。seed另建一条单峰基线（已批准）与一条多主群基线（已批准），便于直接核对两种结果页与导出。
 
-共享RunSummary用于首页/结果/审阅；DistancePlot用于首页/结果；另有StudySelector、ScoreECDF、CovarianceMatrix及通用Notice/DataTable/StatusBadge。所有评分、计数、p与校准ECDF在Python计算，SVG只映射后端结果。
+共享RunSummary用于首页/结果/审阅；DistancePlot用于首页/结果；多主群另有GroupSelectionPanel（BIC候选与拒绝原因）、GroupEvidence（归属依据/次近群/间隔）；ModelSheet按群展示中心与协方差；另有StudySelector、ScoreECDF、CovarianceMatrix及通用Notice/DataTable/StatusBadge。所有评分、计数、p与校准ECDF在Python计算，SVG只映射后端结果。
 
 ## 算法与严格拆分
 
@@ -59,7 +59,22 @@ p(test) = (1 + # {cal D² >= test D²}) / (m + 1)
 
 含等号，同值保守，最小分辨率1/(m+1)。m150时为1/151；若预设alpha=.05，可达到的边际错误网格界为floor(.05*151)/151=7/151。**固定训练且校准/测试独立可交换**时，这是单个新窗口的边际误报控制，不是每批最多5%、条件保证、FDR、故障概率或危险诊断。训练污染只影响固定评分函数的质量，不授权把测试放回拟合；MCD的主群假设与conformal交换性是不同前提。若反复看test调整特征/alpha，不能仍声称预先约定保证。
 
-结果保存全部150校准分数、100测试D²/p/计数/筛选及200训练分数/支持。单研究最多2000窗口，固定4量；来源为预置三研究。fit_hash覆盖算法/特征定义/训练数值/seed/.8，全输入hash还覆盖全部拆分、cal/test、批注与alpha。自然键排序使输入行序不改结果；改test不改fit或cal但改全输入指纹；改alpha不改评分或p。所有计算在Python worker真实执行。
+结果保存全部150校准分数、100测试D²/p/计数/筛选及200训练分数/支持；多主群还保存选群候选、逐群模型/支持/E-CDF、cal/test归属与间隔。单研究最多2000窗口，固定4量；来源为预置四研究。单峰fit_hash覆盖算法/特征定义/训练数值/seed/.8，全输入hash还覆盖全部拆分、cal/test、批注与alpha；多主群fit_hash以选群规则/候选BIC/群成员/归属规则代替单一训练集，并另存逐群`group_fit_hashes`。自然键排序使输入行序不改结果；改test不改fit或cal但改全输入指纹；改alpha不改评分或p。所有计算在Python worker真实执行。
+
+## 多主群研究（mode=multi）
+
+单峰MCD默认假设一个近对称椭圆主群；窗口来自多套稳定环境时不成立。多主群模式在同一严格拆分上增加以下步骤，**群数只由训练窗口决定**：
+
+1. train内用全局训练定标后拟合 `GaussianMixture(covariance_type="full", n_init=5, random_state=seed)`，候选群数 1…min(5, train//20)，以**BIC最小**选群；并列取较小群数。
+2. 合格群下限为 `max(20, 15%×train)`。BIC选中却出现小群时**明确拒绝运行**（不静默合并或丢窗）；每群再独立做与单峰相同的 FastMCD（`.8` raw 支持、重加权、常量/秩亏/条件数>1e10 校验），奇异群明确拒绝并说明群代码。
+3. 群编号按训练窗口数与中心字典序规范化，不受GMM标签置换或输入行序影响。
+4. 归属规则在拟合后冻结：对全部群模型计算重加权 `D²`，归入最小者；并列按群编号较小者，并标注 `ambiguous`。最近与次近群D²之差为 `assignment_margin`。cal/test**只按该规则归属和评分**，不参与选群、拟合或阈值。
+5. 每群用归属到该群的cal建立自己的上尾参照：`p=(1+#同群cal D²≥test D²)/(m_group+1)`。某群cal分到少于4条时明确拒绝，不借用他群校准或test分数。
+6. 结果保存 `group_selection`（全部候选k、BIC、ΔBIC、群大小、合格性与原因）、逐群模型/支持/E-CDF、每个cal/test窗口的群归属、次近群与间隔；`fit_hash` 覆盖选群规则、群成员、归属规则与seed，`group_fit_hashes` 逐群记录训练输入指纹。
+
+兼容：运行配置页可选“单峰稳健 / 多主群”。历史运行与旧快照没有 `config.mode` 时一律按单峰处理，评分、`fit_hash` 与导出列保持不变；数据库升级仅为 `deviation_runs` 增加 `mode` 列并把旧行回填为 `single`（`migrations/002_multi_group.sql` 或启动时幂等 `upgrade_schema()`）。多主群下载CSV在原有列后增加 `group, group_cal_m, group_assignment_basis, second_group, second_group_D_squared, assignment_margin, ambiguous, mode`，不改变原列顺序。
+
+多主群仍是**群内**的单峰假设：群内多峰、训练污染或cal/test可交换性不成立时，p的解释与单峰同样受限，不是条件保证、FDR或危险诊断。
 
 ## 开发与结构
 
@@ -80,7 +95,7 @@ npm ci
 npm run dev
 ```
 
-`backend/src/{routes,controllers,services,models,schemas,middlewares,utils,constants,config}` 按来源、MCD、conformal、运行与审阅职责拆分；`backend/scripts/seed_demo.py`；migration为可选索引升级，首次schema由SQLAlchemy metadata建立，非独立全量DDL。`frontend/src/{api,stores,types,components/common,hooks,pages,router,utils,constants}` 为React应用。
+`backend/src/{routes,controllers,services,models,schemas,middlewares,utils,constants,config}` 按来源、MCD、多群选群/归属、conformal、运行与审阅职责拆分；`backend/tests/` 为多主群算法与API回归；`backend/scripts/seed_demo.py`；migration为可选索引/列升级，首次schema由SQLAlchemy metadata建立、`upgrade_schema()`幂等补列；非独立全量DDL。`frontend/src/{api,stores,types,components/common,hooks,pages,router,utils,constants}` 为React应用。
 
 .env参数：COMPOSE_PROJECT_NAME、FRONTEND_PORT、BACKEND_PORT、DB_PORT、JWT_SECRET、SEED_DEMO；DATABASE_URL/REDIS_URL由Compose定义。角色枚举在backend/constants/roles与frontend/constants/enums，参与路由鉴权和页面角色显示；运行枚举backend/constants/status与同一前端enums参与worker/StatusBadge；审阅Literal位于backend/schemas/note并在model/service与前端ReviewStatus使用；split Literal位于backend/schemas/window，分析校验与前端SplitRoles保持train/cal/test。
 

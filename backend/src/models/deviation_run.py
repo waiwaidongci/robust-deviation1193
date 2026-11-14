@@ -9,6 +9,7 @@ class DeviationRun(Base):
     study_id:Mapped[int]=mapped_column(ForeignKey("archive_studies.id"))
     alpha:Mapped[float]=mapped_column(Double)
     seed:Mapped[int]
+    mode:Mapped[str]=mapped_column(default="single",server_default="single")
     input_snapshot:Mapped[dict]=mapped_column(JSON)
     status:Mapped[str]=mapped_column(default="queued")
     result:Mapped[dict]=mapped_column(JSON,default=dict)

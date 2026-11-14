@@ -1,0 +1,102 @@
+{
+  "mode": "multi",
+  "groups": [
+    {
+      "code": "G1",
+      "train_count": 100,
+      "cal_count": 73,
+      "test_count": 77,
+      "condition_number": 7.698746762554536
+    },
+    {
+      "code": "G2",
+      "train_count": 100,
+      "cal_count": 77,
+      "test_count": 73,
+      "condition_number": 5.482929905369852
+    }
+  ],
+  "selection": [
+    {
+      "k": 1,
+      "bic": 1939.4836875802505,
+      "sizes": [
+        200
+      ],
+      "eligible": true,
+      "reason": "",
+      "delta_bic": 161.86524965001013,
+      "selected": false
+    },
+    {
+      "k": 2,
+      "bic": 1777.6184379302404,
+      "sizes": [
+        100,
+        100
+      ],
+      "eligible": true,
+      "reason": "",
+      "delta_bic": 0.0,
+      "selected": true
+    },
+    {
+      "k": 3,
+      "bic": 1831.292947304073,
+      "sizes": [
+        100,
+        61,
+        39
+      ],
+      "eligible": true,
+      "reason": "",
+      "delta_bic": 53.674509373832734,
+      "selected": false
+    },
+    {
+      "k": 4,
+      "bic": 1846.6806932595796,
+      "sizes": [
+        100,
+        54,
+        42,
+        4
+      ],
+      "eligible": false,
+      "reason": "最小群4/200条低于阈值30条（max(20, 15%×train))",
+      "delta_bic": 69.06225532933922,
+      "selected": false
+    },
+    {
+      "k": 5,
+      "bic": 1912.014912291497,
+      "sizes": [
+        54,
+        52,
+        48,
+        42,
+        4
+      ],
+      "eligible": false,
+      "reason": "最小群4/200条低于阈值30条（max(20, 15%×train))",
+      "delta_bic": 134.39647436125665,
+      "selected": false
+    }
+  ],
+  "test_example": {
+    "window": "MX-351",
+    "group_code": "G2",
+    "group_m": 77,
+    "cal_ge_count": 19,
+    "p": 0.2564102564102564,
+    "second_group_code": "G1",
+    "assignment_margin": 49.24051713740071,
+    "ambiguous": false
+  },
+  "counts": {
+    "train": 200,
+    "cal": 150,
+    "test": 150
+  },
+  "selected_count": 5
+}
